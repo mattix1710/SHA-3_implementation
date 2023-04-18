@@ -1,3 +1,6 @@
+'''
+    Naive implementation of Keccak function - SHA-3 hash function
+'''
 from .keccak_func import Keccak_256
 
 with open('test_files/test.txt', 'rb') as input_to_hash:
