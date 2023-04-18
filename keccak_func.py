@@ -63,7 +63,16 @@ def Keccak_subfuncs(state):
     # === Rho function ===
     # Rho shift of given z offset
     # move to the left and bitwise OR moved data and their new position
-    state = state << RHO_SHIFTS | state >> np.uint64(64 - RHO_SHIFTS)
+    state_arr = state_arr << RHO_SHIFTS | state_arr >> np.uint64(64 - RHO_SHIFTS)
+    
+    # === Pi function ===
+    # create auxilliary table
+    # shuffle between x & y axes
+    state = np.zeros_like(state_arr)
+    for x in range(KECCAK_PLANES_SLICES):
+        for y in range(KECCAK_PLANES_SLICES):
+            state[y][x] = state_arr[x][(x+3*y)%5]
+    state_arr = state
     
 
 def Keccak_256(inputBytes):
