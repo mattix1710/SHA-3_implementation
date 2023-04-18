@@ -74,6 +74,15 @@ def Keccak_subfuncs(state):
             state[y][x] = state_arr[x][(x+3*y)%5]
     state_arr = state
     
+    # === Chi function ===
+    # create auxilliary table
+    # XOR each bit with XOR of negation of bit one position to the right and bit two positions to the right
+    state = np.zeros_like(state_arr)
+    for y in range(KECCAK_PLANES_SLICES):
+        for x in range(KECCAK_PLANES_SLICES):
+            state[y][x] = state_arr[y][x] ^ (~state_arr[y][(x+1)%5] & state_arr[y][(x+2)%5])
+    state_arr = state
+    
 
 def Keccak_256(inputBytes):
     rate = (1600-256*2)//8
