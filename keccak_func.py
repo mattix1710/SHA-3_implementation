@@ -12,6 +12,13 @@ KECCAK_BYTES = 200
 KECCAK_LANES = 25
 KECCAK_PLANES_SLICES = 5
 
+# all Rho shifts that are %64 in order to match the overall shift
+RHO_SHIFTS = np.array([[0, 36, 3, 41, 18],
+                       [1, 44, 10, 45, 2],
+                       [62, 6, 43, 15, 61],
+                       [28, 55, 25, 21, 56],
+                       [27, 20, 39, 8, 14]], dtype=np.uint64)
+
 def Keccak_subfuncs(state):
     '''
     uint64 which gives us 64 bits per 1 "width" which *25 = 1600 bit state array
@@ -52,6 +59,11 @@ def Keccak_subfuncs(state):
     for x in range(KECCAK_PLANES_SLICES):
         for y in range(KECCAK_PLANES_SLICES):
             state_arr[y][x] ^= columnsXORed[x]
+            
+    # === Rho function ===
+    # Rho shift of given z offset
+    # move to the left and bitwise OR moved data and their new position
+    state = state << RHO_SHIFTS | state >> np.uint64(64 - RHO_SHIFTS)
     
 
 def Keccak_256(inputBytes):
