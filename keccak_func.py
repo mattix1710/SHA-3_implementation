@@ -37,51 +37,57 @@ def Keccak_subfuncs(state):
     # bytes_val = state_arr[0][0].tobytes()
     # print(bytes_val)
     
-    # === Theta function ===
-    # even out left and right columns
-    leftShift = state_arr << 1 | state_arr >> 63
-    rightShift = state_arr >> 1 | state_arr << 63
-    
-    # flatten columns - because each bit uses whole y-dimension
-    leftFlat = np.zeros((5), dtype=np.uint64)
-    rightFlat = np.zeros((5), dtype=np.uint64)
-    
-    for y in range(KECCAK_PLANES_SLICES):
-        leftFlat ^= leftShift[y]
-        rightFlat ^= rightShift[y]
+    for round in range(24):
+        # === Theta function ===
+        # even out left and right columns
+        leftShift = state_arr << 1 | state_arr >> 63
+        rightShift = state_arr >> 1 | state_arr << 63
         
-    # XOR columns depending on their position
-    columnsXORed = np.zeros_like(leftFlat)
-    for x in range(KECCAK_PLANES_SLICES):
-        columnsXORed[x] = leftFlat[(x-1)%5] ^ rightFlat[(x+1)%5]
-    
-    # XOR each bit with calculated columns
-    for x in range(KECCAK_PLANES_SLICES):
+        # flatten columns - because each bit uses whole y-dimension
+        leftFlat = np.zeros((5), dtype=np.uint64)
+        rightFlat = np.zeros((5), dtype=np.uint64)
+        
         for y in range(KECCAK_PLANES_SLICES):
-            state_arr[y][x] ^= columnsXORed[x]
+            leftFlat ^= leftShift[y]
+            rightFlat ^= rightShift[y]
             
-    # === Rho function ===
-    # Rho shift of given z offset
-    # move to the left and bitwise OR moved data and their new position
-    state_arr = state_arr << RHO_SHIFTS | state_arr >> np.uint64(64 - RHO_SHIFTS)
-    
-    # === Pi function ===
-    # create auxilliary table
-    # shuffle between x & y axes
-    state = np.zeros_like(state_arr)
-    for x in range(KECCAK_PLANES_SLICES):
-        for y in range(KECCAK_PLANES_SLICES):
-            state[y][x] = state_arr[x][(x+3*y)%5]
-    state_arr = state
-    
-    # === Chi function ===
-    # create auxilliary table
-    # XOR each bit with XOR of negation of bit one position to the right and bit two positions to the right
-    state = np.zeros_like(state_arr)
-    for y in range(KECCAK_PLANES_SLICES):
+        # XOR columns depending on their position
+        columnsXORed = np.zeros_like(leftFlat)
         for x in range(KECCAK_PLANES_SLICES):
-            state[y][x] = state_arr[y][x] ^ (~state_arr[y][(x+1)%5] & state_arr[y][(x+2)%5])
-    state_arr = state
+            columnsXORed[x] = leftFlat[(x-1)%5] ^ rightFlat[(x+1)%5]
+        
+        # XOR each bit with calculated columns
+        for x in range(KECCAK_PLANES_SLICES):
+            for y in range(KECCAK_PLANES_SLICES):
+                state_arr[y][x] ^= columnsXORed[x]
+                
+        # === Rho function ===
+        # Rho shift of given z offset
+        # move to the left and bitwise OR moved data and their new position
+        state_arr = state_arr << RHO_SHIFTS | state_arr >> np.uint64(64 - RHO_SHIFTS)
+        
+        # === Pi function ===
+        # create auxilliary table
+        # shuffle between x & y axes
+        state = np.zeros_like(state_arr)
+        for x in range(KECCAK_PLANES_SLICES):
+            for y in range(KECCAK_PLANES_SLICES):
+                state[y][x] = state_arr[x][(x+3*y)%5]
+        state_arr = state
+        
+        # === Chi function ===
+        # create auxilliary table
+        # XOR each bit with XOR of negation of bit one position to the right and bit two positions to the right
+        state = np.zeros_like(state_arr)
+        for y in range(KECCAK_PLANES_SLICES):
+            for x in range(KECCAK_PLANES_SLICES):
+                state[y][x] = state_arr[y][x] ^ (~state_arr[y][(x+1)%5] & state_arr[y][(x+2)%5])
+        state_arr = state
+        
+        # === Iota function ===
+        state_arr[0][0] = 
+        
+    return bytearray(state_arr.tobytes(order='C'))
     
 
 def Keccak_256(inputBytes):
