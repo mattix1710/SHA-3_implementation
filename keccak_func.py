@@ -85,7 +85,8 @@ def Keccak_subfuncs(state):
         state_arr = state
         
         # === Iota function ===
-        state_arr[0][0] = 
+        #TODO: Iota func
+        #state_arr[0][0] = 
         
     return bytearray(state_arr.tobytes(order='C'))
     
