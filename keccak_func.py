@@ -7,6 +7,7 @@ Checking out the 256-bit Keccak hashing function
 import numpy as np
 import os
 from pathlib import Path
+import binascii
 
 KECCAK_BYTES = 200
 KECCAK_LANES = 25
@@ -18,6 +19,16 @@ RHO_SHIFTS = np.array([[0, 36, 3, 41, 18],
                        [62, 6, 43, 15, 61],
                        [28, 55, 25, 21, 56],
                        [27, 20, 39, 8, 14]], dtype=np.uint64)
+
+IOTA_ROUND_CONSTANTS = np.array([0x0000000000000001,0x0000000000008082, 0x800000000000808A,
+                            0x8000000080008000, 0x000000000000808B, 0x0000000080000001,
+                            0x8000000080008081, 0x8000000000008009, 0x000000000000008A,
+                            0x0000000000000088, 0x0000000080008009, 0x000000008000000A,
+                            0x000000008000808B, 0x800000000000008B, 0x8000000000008089,
+                            0x8000000000008003, 0x8000000000008002, 0x8000000000000080,
+                            0x000000000000800A, 0x800000008000000A, 0x8000000080008081,
+                            0x8000000000008080, 0x0000000080000001, 0x8000000080008008],
+                            dtype=np.uint64)
 
 def Keccak_subfuncs(state):
     '''
@@ -61,6 +72,9 @@ def Keccak_subfuncs(state):
             for y in range(KECCAK_PLANES_SLICES):
                 state_arr[y][x] ^= columnsXORed[x]
                 
+        if round == 0:
+            print("THETA", state_arr)
+                
         # === Rho function ===
         # Rho shift of given z offset
         # move to the left and bitwise OR moved data and their new position
@@ -85,8 +99,8 @@ def Keccak_subfuncs(state):
         state_arr = state
         
         # === Iota function ===
-        #TODO: Iota func
-        #state_arr[0][0] = 
+        # XOR first lane (with x, y coord as 0,0) with the round constant RC depending on the current round
+        state_arr[0][0] ^= IOTA_ROUND_CONSTANTS[round]
         
     return bytearray(state_arr.tobytes(order='C'))
     
@@ -104,7 +118,7 @@ def Keccak_256(inputBytes):
         # print(it, chr(byte))
         state_str[it] = byte
     
-    # print(state_arr)
+    # print("STATE:", state_str)
     
     len_diff = len(state_str) - capacity - len(inputBytes)
     # == Adding PAD to the chunk of data ==
@@ -116,14 +130,20 @@ def Keccak_256(inputBytes):
             state_str[len(inputBytes)] = 0x81
         for it in range(len_diff):
             if it == 0:
-                state_str[inputOffset] = 0x80
+                state_str[inputOffset] = 0x06#0x80
                 continue
             if it == len_diff-1:
-                state_str[inputOffset+it] = 0x01
+                state_str[inputOffset+it] = 0x80#0x01
                 continue
             # state_arr[inputOffset+it] = 0x00
+    # print("PADDING:", state_str[:rate])
             
-    Keccak_subfuncs(state_str)
+    state_str = Keccak_subfuncs(state_str)
+    # print("FUNC:", state_str)
+    return state_str[:(256//8)]
+
+    
+    
 
 with open('test_files/test.txt', 'rb') as input_to_hash:
-    Keccak_256(input_to_hash.read())
+    print(binascii.hexlify(Keccak_256(input_to_hash.read())))
