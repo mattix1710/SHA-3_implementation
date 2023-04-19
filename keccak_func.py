@@ -78,6 +78,7 @@ def Keccak_subfuncs(state):
         # === Rho function ===
         # Rho shift of given z offset
         # move to the left and bitwise OR moved data and their new position
+        # TODO: probably revise - change RHO_SHIFTS
         state_arr = state_arr << RHO_SHIFTS | state_arr >> np.uint64(64 - RHO_SHIFTS)
         
         # === Pi function ===
@@ -103,6 +104,43 @@ def Keccak_subfuncs(state):
         state_arr[0][0] ^= IOTA_ROUND_CONSTANTS[round]
         
     return bytearray(state_arr.tobytes(order='C'))
+
+##########################
+# TEMP test
+##########################
+
+THETA_REORDER = ((4, 0, 1, 2, 3), (1, 2, 3, 4, 0))
+
+def Keccak_subfuncs_F_order(state):
+    state_arr = np.ndarray((5,5), dtype=np.uint64, buffer=state, order='F')
+    
+    for round in range(24):
+        # THETA - subfunction taken from FIPS_numpy.py/KeccakF1600
+        array_shift = state_arr << 1 | state_arr >> 63
+        state_arr ^= np.bitwise_xor.reduce(state_arr[THETA_REORDER[0], ], 1, keepdims=True) ^ np.bitwise_xor.reduce(array_shift[THETA_REORDER[1], ], 1, keepdims=True)
+        
+        # RHO
+        state_arr = state_arr << RHO_SHIFTS | state_arr >> np.uint64(64-RHO_SHIFTS)
+        
+        # PI
+        state = np. zeros_like(state_arr)
+        for x in range(KECCAK_PLANES_SLICES):
+            for y in range(KECCAK_PLANES_SLICES):
+                state[x][y] = state_arr[(x+3*y)%5][x]
+        state_arr = state
+        
+        # CHI
+        state = np.zeros_like(state_arr)
+        for x in range(KECCAK_PLANES_SLICES):
+            for y in range(KECCAK_PLANES_SLICES):
+                state[x][y] = state_arr[x][y] ^ (~state_arr[(x+1)%5][y] & state_arr[(x+2)%5][y])
+        state_arr = state
+        
+        state_arr[0][0] ^= IOTA_ROUND_CONSTANTS[round]
+        
+    return bytearray(state_arr.tobytes(order='F'))
+
+    
     
 
 def Keccak_256(inputBytes):
@@ -138,7 +176,9 @@ def Keccak_256(inputBytes):
             # state_arr[inputOffset+it] = 0x00
     # print("PADDING:", state_str[:rate])
             
-    state_str = Keccak_subfuncs(state_str)
+    # state_str = Keccak_subfuncs(state_str)
+    state_str = Keccak_subfuncs_F_order(state_str)
+    
     # print("FUNC:", state_str)
     return state_str[:(256//8)]
 
