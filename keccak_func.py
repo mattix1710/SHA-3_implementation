@@ -175,6 +175,9 @@ def Keccak_256(inputBytes):
                 continue
             # state_arr[inputOffset+it] = 0x00
     # print("PADDING:", state_str[:rate])
+    
+    # TODO: check padding when with more words
+    # RETHINK implementing working on more than one "sequence"
             
     # state_str = Keccak_subfuncs(state_str)
     state_str = Keccak_subfuncs_F_order(state_str)
@@ -185,5 +188,5 @@ def Keccak_256(inputBytes):
     
     
 
-with open('test_files/test.txt', 'rb') as input_to_hash:
-    print(binascii.hexlify(Keccak_256(input_to_hash.read())))
+# with open('test_files/test.txt', 'rb') as input_to_hash:
+#     print(binascii.hexlify(Keccak_256(input_to_hash.read())))
